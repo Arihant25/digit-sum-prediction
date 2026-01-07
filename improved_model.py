@@ -3,6 +3,21 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
+# GPU Configuration
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        print(f"GPU(s) detected: {len(gpus)} device(s)")
+    except RuntimeError as e:
+        print(e)
+else:
+    print("No GPU detected, using CPU")
+
+# Enable mixed precision for faster training on GPU
+tf.keras.mixed_precision.set_global_policy('mixed_float16')
+
 # Load all training data
 data0 = np.load('./data0.npy')
 data1 = np.load('./data1.npy')
@@ -78,7 +93,7 @@ x = layers.Dropout(0.4)(x)
 x = layers.Dense(64, activation='relu', kernel_regularizer=keras.regularizers.l2(1e-4))(x)
 x = layers.Dropout(0.3)(x)
 
-x = layers.Dense(1)(x)
+x = layers.Dense(1, dtype='float32')(x)  # Output layer in float32 for numerical stability
 
 model = keras.Model(inputs, x)
 
