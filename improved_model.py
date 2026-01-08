@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+import time
 
 # GPU Configuration
 gpus = tf.config.list_physical_devices('GPU')
@@ -10,13 +11,13 @@ if gpus:
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
         print(f"GPU(s) detected: {len(gpus)} device(s)")
+        # Enable mixed precision for faster training on GPU
+        tf.keras.mixed_precision.set_global_policy('mixed_float16')
     except RuntimeError as e:
         print(e)
 else:
     print("No GPU detected, using CPU")
 
-# Enable mixed precision for faster training on GPU
-tf.keras.mixed_precision.set_global_policy('mixed_float16')
 
 # Load all training data
 data0 = np.load('./data0.npy')
@@ -118,19 +119,25 @@ checkpoint = keras.callbacks.ModelCheckpoint(
     'best_model.keras', monitor='val_mae', save_best_only=True, mode='min'
 )
 
+start_time = time.time()
+
 # Train model
 history = model.fit(
     X_train, y_train,
-    epochs=30,
+    epochs=32,
     batch_size=128,
     validation_split=0.2,
     callbacks=[early_stop, reduce_lr, checkpoint]
 )
 
+end_time = time.time()
+training_time = end_time - start_time
+
+print(f"Training time: {training_time:.2f} seconds")
+
 # Evaluate on test set
 test_loss, test_mae = model.evaluate(X_test, y_test)
 print(f"\nTest MAE: {test_mae:.2f}")
 
-# Save model
-model.save('digit_sum_improved.keras')
-print("Model saved as 'digit_sum_improved.keras'")
+# Best model already saved via checkpoint callback
+print("Best model saved as best_model.keras")

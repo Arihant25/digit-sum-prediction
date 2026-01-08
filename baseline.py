@@ -11,13 +11,13 @@ if gpus:
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
         print(f"GPU(s) detected: {len(gpus)} device(s)")
+        # Enable mixed precision for faster training on GPU
+        tf.keras.mixed_precision.set_global_policy('mixed_float16')
     except RuntimeError as e:
         print(e)
 else:
     print("No GPU detected, using CPU")
 
-# Enable mixed precision for faster training on GPU
-tf.keras.mixed_precision.set_global_policy('mixed_float16')
 
 # Load all training data
 data0 = np.load('./data0.npy')
@@ -69,9 +69,9 @@ history = model.fit(X_train, y_train, epochs=20, batch_size=32, validation_split
 end_time = time.time()
 training_time = end_time - start_time
 
-# Evaluate on test set
 print(f"Training time: {training_time:.2f} seconds")
 
+# Evaluate on test set
 test_loss, test_mae = model.evaluate(X_test, y_test)
 print(f"\nTest MAE: {test_mae:.2f}")
 

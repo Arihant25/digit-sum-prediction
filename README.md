@@ -81,7 +81,7 @@ Model saves as `digit_sum_improved.keras`
 | Model    | Test MAE | Architecture                   |
 |----------|----------|--------------------------------|
 | Baseline | ~1.65    | Simple 3-layer CNN             |
-| Improved | ~1.64    | ResNet-inspired + augmentation |
+| Improved | ~2.66    | ResNet-inspired + augmentation |
 
 **Note**: MAE (Mean Absolute Error) is used as the primary metric since this is a regression task (predicting continuous digit sums). Using "accuracy" (exact match count) would be too strict for continuous predictions.
 
