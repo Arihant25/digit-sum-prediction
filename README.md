@@ -39,31 +39,31 @@ Model saves as `digit_sum_cnn_baseline.keras`
 
 ### Key Improvements
 
-1. Efficient architecture - 3 residual blocks with skip connections
-2. Enhanced preprocessing - Per-image contrast normalization instead of simple scaling
-3. Moderate data augmentation - Rotation and translation
-4. Huber loss instead of MSE (more robust to outliers)
-5. AdamW optimizer with weight decay and cosine learning rate decay
-6. L2 regularization on dense layers
-7. Progressive dropout (0.2 → 0.4) through the network
+1. Residual connections - 2 residual blocks with skip connections for better gradient flow
+2. Batch normalization - After each convolution for faster convergence
+3. Minimal data augmentation - Light rotation (±5°) and translation (±5%) to avoid distorting digits
+4. MSE loss - Consistent with baseline for fair comparison
+5. Adam optimizer - Standard Adam with learning rate decay via ReduceLROnPlateau
+6. Progressive dropout - (0.25 → 0.3 → 0.4) through the network
+7. Flatten layer - Preserves more spatial information than GlobalAveragePooling
 
 ### Model Architecture
 
-- Data augmentation layer (rotation ±10°, translation ±10%)
-- Initial conv (32 filters) + BatchNorm
-- 3 residual blocks (64, 128, 128 filters)
-- MaxPooling and progressive dropout after each block
-- Global average pooling
-- Dense layers (128 → 64 → 1) with L2 regularization
-- Dropout (0.4, 0.3)
-- **Total params**: ~400K
+- Minimal data augmentation layer (rotation ±5°, translation ±5%)
+- Initial conv (32 filters) + BatchNorm + ReLU
+- 2 residual blocks (64, 128 filters) with skip connections
+- MaxPooling and progressive dropout (0.25, 0.3) after each block
+- Flatten layer (preserves spatial info)
+- Dense layer (128 units) with dropout (0.4)
+- Output layer (1 unit for regression)
+- **Total params**: ~600K
 
 ### Training Details
 
-- **Optimizer**: AdamW with cosine decay (1e-3 → 1e-5) + weight decay
-- **Loss**: Huber (robust to outliers)
-- **Epochs**: Up to 30 (early stopping patience=8)
-- **Batch Size**: 128
+- **Optimizer**: Adam (learning rate=0.001)
+- **Loss**: MSE
+- **Epochs**: Up to 40 (early stopping patience=10)
+- **Batch Size**: 64
 - **Validation**: 20% of training data (implicit split via `validation_split=0.2`)
 - **Final Split**: ~64% training, ~16% validation, ~20% test
 - **Callbacks**: EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
@@ -74,20 +74,54 @@ Model saves as `digit_sum_cnn_baseline.keras`
 python improved_model.py
 ```
 
-Model saves as `digit_sum_improved.keras`
+Model saves as `best_model.keras`
 
 ### Comparison
 
-| Model    | Test MAE | Architecture                   |
-|----------|----------|--------------------------------|
-| Baseline | ~1.65    | Simple 3-layer CNN             |
-| Improved | ~2.66    | ResNet-inspired + augmentation |
+| Model    | Test MAE | Test Accuracy | Training Time (CPU) | Architecture                      |
+|----------|----------|---------------|---------------------|-----------------------------------|
+| Baseline | ~1.93    | 16.83%        | ~30 mins            | Simple 3-layer CNN                |
+| Improved | ~7.53    | 3.68%         | ~10 hours           | ResNet-inspired with residuals    |
 
 **Note**: MAE (Mean Absolute Error) is used as the primary metric since this is a regression task (predicting continuous digit sums). Using "accuracy" (exact match count) would be too strict for continuous predictions.
+
+## Model Evaluation
+
+Compare both models on the test set:
+
+```bash
+python evaluate.py
+```
+
+This script:
+- Uses the same 80/20 train/test split as the training scripts
+- Loads both `digit_sum_cnn_baseline.keras` and `best_model.keras`
+- Runs inference on all test samples
+- Calculates accuracy by rounding predictions and comparing to true values
+- Prints live predictions for each image (predicted vs true value)
+- Displays final accuracy percentage for both models
+
+**Accuracy Metric**: Predictions are rounded to nearest integer and compared with rounded true values. A correct prediction means `round(predicted) == round(true_value)`.
+
+## Data Visualization
+
+View random samples from each dataset:
+
+```bash
+uv run visualize_samples.py
+```
+
+This script:
+- Loads one random image from each of data0, data1, and data2
+- Displays the corresponding labels
+- Saves visualized images to the `smell/` folder as PNG files
 
 ## Files
 
 - `baseline.py` - Baseline CNN
 - `improved_model.py` - Improved model with residual blocks
+- `evaluate.py` - Evaluation script comparing both models on test set
+- `visualize_samples.py` - Visualization script for random dataset samples
 - `data*.npy`, `lab*.npy` - Training data
 - `*.keras` - Saved models
+- `smell/` - Output folder for visualized samples
